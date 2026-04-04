@@ -30,7 +30,7 @@ commands:
 - echo "Moving to project folder..."
 - cd DevOps-Project-23/Swiggy_clone
 
-```
+
   - echo "Running SonarQube analysis..."
   - sonar-scanner -Dsonar.projectKey=swiggy -Dsonar.sources=. -Dsonar.host.url=http://13.211.5.192:9000 -Dsonar.login=$SONAR_TOKEN
 
@@ -39,7 +39,7 @@ commands:
 
   - echo "Pushing Docker image..."
   - docker push $DOCKER_REGISTRY_USERNAME/swiggy:latest
-```
+
 
 post_build:
 commands:
