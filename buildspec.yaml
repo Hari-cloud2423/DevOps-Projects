@@ -1,0 +1,56 @@
+version: 0.2
+
+env:
+parameter-store:
+DOCKER_REGISTRY_USERNAME: /cicd/docker-credentials/username
+DOCKER_REGISTRY_PASSWORD: /cicd/docker-credentials/password
+DOCKER_REGISTRY_URL: /cicd/docker-registry/url
+SONAR_TOKEN: /cicd/sonar/sonar-token
+
+phases:
+
+install:
+runtime-versions:
+python: 3.11
+java: corretto17
+commands:
+- echo "Installing SonarScanner..."
+- export SONAR_SCANNER_VERSION=5.0.1.3006
+- wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+- unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+- export PATH=$PATH:$PWD/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin
+
+pre_build:
+commands:
+- echo "Logging into Docker Hub..."
+- echo "$DOCKER_REGISTRY_PASSWORD" | docker login -u "$DOCKER_REGISTRY_USERNAME" --password-stdin
+
+build:
+commands:
+- echo "Moving to project folder..."
+- cd DevOps-Project-23/Swiggy_clone
+
+```
+  - echo "Running SonarQube analysis..."
+  - sonar-scanner -Dsonar.projectKey=swiggy -Dsonar.sources=. -Dsonar.host.url=http://13.211.5.192:9000 -Dsonar.login=$SONAR_TOKEN
+
+  - echo "Building Docker image..."
+  - docker build -t $DOCKER_REGISTRY_USERNAME/swiggy:latest .
+
+  - echo "Pushing Docker image..."
+  - docker push $DOCKER_REGISTRY_USERNAME/swiggy:latest
+```
+
+post_build:
+commands:
+- echo "Sending email notification..."
+- aws ses send-email 
+--from "[jhariharancse@gmail.com](mailto:jhariharancse@gmail.com)" 
+--to "[jhariharancse@gmail.com](mailto:jhariharancse@gmail.com)" 
+--subject "CodeBuild Status: $CODEBUILD_BUILD_ID" 
+--text "Build status: $CODEBUILD_BUILD_STATUS" 
+--region "us-east-1"
+
+artifacts:
+files:
+- appspec.yaml
