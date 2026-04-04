@@ -27,14 +27,13 @@ commands:
 
 build:
 commands:
-- echo "Running SonarQube analysis..."
-- sonar-scanner 
--Dsonar.projectKey=swiggy 
--Dsonar.sources=. 
--Dsonar.host.url=http://13.211.5.192:9000 
--Dsonar.login=$SONAR_TOKEN
+- echo "Moving to project folder..."
+- cd DevOps-Project-23/Swiggy_clone
 
 ```
+  - echo "Running SonarQube analysis..."
+  - sonar-scanner -Dsonar.projectKey=swiggy -Dsonar.sources=. -Dsonar.host.url=http://13.211.5.192:9000 -Dsonar.login=$SONAR_TOKEN
+
   - echo "Building Docker image..."
   - docker build -t $DOCKER_REGISTRY_USERNAME/swiggy:latest .
 
