@@ -36,17 +36,6 @@ phases:
       - echo "Pushing Docker image..."
       - docker push $DOCKER_REGISTRY_USERNAME/swiggy:latest
 
-  post_build:
-    commands:
-      - echo "Sending email notification..."
-      - |
-        aws ses send-email \
-        --from "jhariharancse@gmail.com" \
-        --to "jhariharancse@gmail.com" \
-        --subject "CodeBuild Status: $CODEBUILD_BUILD_ID" \
-        --text "Build status: $CODEBUILD_BUILD_STATUS" \
-        --region "us-east-1"
-
 artifacts:
   base-directory: DevOps-Project-23/Swiggy_clone
   files:
