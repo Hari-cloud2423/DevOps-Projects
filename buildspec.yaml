@@ -48,5 +48,7 @@ phases:
         --region "us-east-1"
 
 artifacts:
+  base-directory: DevOps-Project-23/Swiggy_clone
   files:
     - appspec.yaml
+    - '**/*'
