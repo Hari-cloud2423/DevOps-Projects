@@ -35,10 +35,12 @@ phases:
 
   build:
     commands:
-      - echo "Moving to application directory..."
-      - cd DevOps-Project-23/Swiggy_clone
+      - echo "Checking files..."
+      - ls -la   # 🔥 helps debug
 
-      # SonarQube Code Scan
+      - echo "Moving to application directory..."
+      - cd Swiggy_clone   # ✅ FIXED HERE
+
       - echo "Running SonarQube scan..."
       - sonar-scanner \
         -Dsonar.projectKey=swiggy \
@@ -46,19 +48,15 @@ phases:
         -Dsonar.host.url=http://34.228.64.110:9000 \
         -Dsonar.login=$SONAR_TOKEN
 
-      # Build Docker Image
       - echo "Building Docker image..."
       - docker build -t swiggy-app .
 
-      # Trivy Image Scan
       - echo "Scanning Docker image with Trivy..."
       - trivy image --severity HIGH,CRITICAL --exit-code 0 swiggy-app
 
-      # Tag Image
       - echo "Tagging Docker image..."
       - docker tag swiggy-app:latest 317968578233.dkr.ecr.us-east-1.amazonaws.com/swiggy-app:latest
 
-      # Push to ECR
       - echo "Pushing image to Amazon ECR..."
       - docker push 317968578233.dkr.ecr.us-east-1.amazonaws.com/swiggy-app:latest
 
