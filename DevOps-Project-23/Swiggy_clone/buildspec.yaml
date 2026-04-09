@@ -38,7 +38,7 @@ phases:
       - ls -la
 
       - echo Moving to project folder
-      - cd Swiggy_clone
+      - cd DevOps-Project-23/Swiggy_clone
 
       # Sonar Scan (safe - won’t break build)
       - echo Running SonarQube scan
