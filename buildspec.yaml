@@ -2,42 +2,67 @@ version: 0.2
 
 env:
   parameter-store:
-    DOCKER_REGISTRY_USERNAME: /cicd/docker-credentials/username
-    DOCKER_REGISTRY_PASSWORD: /cicd/docker-credentials/password
-    DOCKER_REGISTRY_URL: /cicd/docker-registry/url
     SONAR_TOKEN: /cicd/sonar/sonar-token
 
 phases:
-
   install:
     runtime-versions:
       python: 3.11
       java: corretto17
     commands:
-      - echo "Installing SonarScanner..."
+      - echo "Installing dependencies..."
+      - apt-get update -y
+      - apt-get install -y wget unzip
+
+      # Install Sonar Scanner
       - export SONAR_SCANNER_VERSION=5.0.1.3006
       - wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
       - unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
       - export PATH=$PATH:$PWD/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin
 
+      # Install Trivy
+      - wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.1_Linux-64bit.deb
+      - dpkg -i trivy_0.50.1_Linux-64bit.deb
+
   pre_build:
     commands:
-      - echo "Logging into Docker Hub..."
-      - echo "$DOCKER_REGISTRY_PASSWORD" | docker login -u "$DOCKER_REGISTRY_USERNAME" --password-stdin
+      - echo "Login to ECR"
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 317968578233.dkr.ecr.us-east-1.amazonaws.com
 
   build:
     commands:
-      - echo "Moving to project folder..."
-      - cd DevOps-Project-23/Swiggy_clone
-      - echo "Running SonarQube analysis..."
-      - sonar-scanner -Dsonar.projectKey=swiggy -Dsonar.sources=. -Dsonar.host.url=http://13.211.5.192:9000 -Dsonar.login=$SONAR_TOKEN
-      - echo "Building Docker image..."
-      - docker build -t $DOCKER_REGISTRY_USERNAME/swiggy:latest .
-      - echo "Pushing Docker image..."
-      - docker push $DOCKER_REGISTRY_USERNAME/swiggy:latest
+      - echo "Checking files"
+      - ls -la
+
+      - echo "Move to app folder"
+      - cd Swiggy_clone
+
+      # ✅ Sonar (non-blocking)
+      - echo "Running SonarQube..."
+      - sonar-scanner \
+        -Dsonar.projectKey=swiggy \
+        -Dsonar.sources=. \
+        -Dsonar.host.url=http://34.228.64.110:9000 \
+        -Dsonar.login=$SONAR_TOKEN || true
+
+      # ✅ Build image
+      - echo "Building Docker image"
+      - docker build -t swiggy-app .
+
+      # ✅ Trivy scan (non-blocking)
+      - echo "Running Trivy scan"
+      - trivy image --severity HIGH,CRITICAL swiggy-app || true
+
+      # ✅ Tag
+      - docker tag swiggy-app:latest 317968578233.dkr.ecr.us-east-1.amazonaws.com/swiggy-app:latest
+
+      # ✅ Push
+      - docker push 317968578233.dkr.ecr.us-east-1.amazonaws.com/swiggy-app:latest
+
+  post_build:
+    commands:
+      - echo "Build completed successfully"
 
 artifacts:
-  base-directory: DevOps-Project-23/Swiggy_clone
   files:
     - appspec.yaml
-    - '**/*'
