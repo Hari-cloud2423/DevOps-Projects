@@ -11,17 +11,16 @@ phases:
       java: corretto17
     commands:
       - echo "Installing dependencies..."
-
       - apt-get update -y
       - apt-get install -y wget unzip curl
 
-      # ✅ Sonar Scanner
+      # Sonar Scanner
       - export SONAR_SCANNER_VERSION=5.0.1.3006
       - wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
       - unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
       - export PATH=$PATH:$PWD/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin
 
-      # ✅ Trivy install (FIXED + INDENTED)
+      # Trivy install
       - echo "Installing Trivy..."
       - TRIVY_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/trivy/releases/latest | grep tag_name | cut -d '"' -f 4)
       - echo "Latest Trivy version: $TRIVY_VERSION"
@@ -40,30 +39,23 @@ phases:
     commands:
       - echo "Checking files"
       - ls -la
-
       - echo "Move to app folder"
       - cd Swiggy_clone
 
-      # ✅ Sonar (non-blocking)
+      # ✅ FIXED SONAR (SINGLE LINE)
       - echo "Running SonarQube..."
-      - sonar-scanner \
-        -Dsonar.projectKey=swiggy \
-        -Dsonar.sources=. \
-        -Dsonar.host.url=http://34.228.64.110:9000 \
-        -Dsonar.login=$SONAR_TOKEN || true
+      - sonar-scanner -Dsonar.projectKey=swiggy -Dsonar.sources=. -Dsonar.host.url=http://34.228.64.110:9000 -Dsonar.login=$SONAR_TOKEN || true
 
-      # ✅ Build image
+      # Docker
       - echo "Building Docker image"
       - docker build -t swiggy-app .
 
-      # ✅ Trivy scan
+      # Trivy
       - echo "Running Trivy scan"
       - trivy image --severity HIGH,CRITICAL swiggy-app || true
 
-      # ✅ Tag
+      # Tag + Push
       - docker tag swiggy-app:latest 317968578233.dkr.ecr.us-east-1.amazonaws.com/swiggy-app:latest
-
-      # ✅ Push
       - docker push 317968578233.dkr.ecr.us-east-1.amazonaws.com/swiggy-app:latest
 
   post_build:
