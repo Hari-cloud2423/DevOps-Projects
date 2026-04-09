@@ -11,18 +11,25 @@ phases:
       java: corretto17
     commands:
       - echo "Installing dependencies..."
-      - apt-get update -y
-      - apt-get install -y wget unzip
 
-      # Install Sonar Scanner
+      - apt-get update -y
+      - apt-get install -y wget unzip curl
+
+      # ✅ Sonar Scanner
       - export SONAR_SCANNER_VERSION=5.0.1.3006
       - wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
       - unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
       - export PATH=$PATH:$PWD/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin
 
-      # Install Trivy
-      - wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.1_Linux-64bit.deb
-      - dpkg -i trivy_0.50.1_Linux-64bit.deb
+      # ✅ Trivy install (FIXED + INDENTED)
+      - echo "Installing Trivy..."
+      - TRIVY_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/trivy/releases/latest | grep tag_name | cut -d '"' -f 4)
+      - echo "Latest Trivy version: $TRIVY_VERSION"
+      - wget https://github.com/aquasecurity/trivy/releases/download/${TRIVY_VERSION}/trivy_${TRIVY_VERSION#v}_Linux-64bit.tar.gz
+      - tar -xzf trivy_*_Linux-64bit.tar.gz
+      - mv trivy /usr/local/bin/
+      - chmod +x /usr/local/bin/trivy
+      - trivy --version
 
   pre_build:
     commands:
@@ -49,7 +56,7 @@ phases:
       - echo "Building Docker image"
       - docker build -t swiggy-app .
 
-      # ✅ Trivy scan (non-blocking)
+      # ✅ Trivy scan
       - echo "Running Trivy scan"
       - trivy image --severity HIGH,CRITICAL swiggy-app || true
 
