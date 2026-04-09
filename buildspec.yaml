@@ -10,61 +10,51 @@ phases:
       python: 3.11
       java: corretto17
     commands:
-      - echo "Installing dependencies"
+      - echo Installing dependencies
       - apt-get update -y
       - apt-get install -y wget unzip curl
 
-      # Install Sonar Scanner
-      - echo "Installing SonarScanner"
+      - echo Installing SonarScanner
       - export SONAR_SCANNER_VERSION=5.0.1.3006
-      - wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
-      - unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
-      - export PATH=$PATH:$PWD/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin
+      - wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+      - unzip sonar-scanner-cli-5.0.1.3006-linux.zip
+      - export PATH=$PATH:$PWD/sonar-scanner-5.0.1.3006-linux/bin
 
-      # Install Trivy (stable version - no YAML issues)
-      - echo "Installing Trivy"
+      - echo Installing Trivy
       - wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.tar.gz
       - tar -xzf trivy_0.49.1_Linux-64bit.tar.gz
       - mv trivy /usr/local/bin/
       - chmod +x /usr/local/bin/trivy
-      - trivy --version
 
   pre_build:
     commands:
-      - echo "Login to Amazon ECR"
+      - echo Login to ECR
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 317968578233.dkr.ecr.us-east-1.amazonaws.com
 
   build:
     commands:
-      - echo "Checking files"
+      - echo Checking files
       - ls -la
-
-      - echo "Move to project directory"
       - cd Swiggy_clone
 
-      # Sonar scan (single line to avoid YAML error)
-      - echo "Running SonarQube scan"
+      - echo Running Sonar
       - sonar-scanner -Dsonar.projectKey=swiggy -Dsonar.sources=. -Dsonar.host.url=http://34.228.64.110:9000 -Dsonar.login=$SONAR_TOKEN || true
 
-      # Build Docker image
-      - echo "Building Docker image"
+      - echo Build Docker
       - docker build -t swiggy-app .
 
-      # Trivy scan
-      - echo "Running Trivy scan"
-      - trivy image --severity HIGH,CRITICAL swiggy-app || true
+      - echo Run Trivy
+      - trivy image swiggy-app || true
 
-      # Tag image
-      - echo "Tagging image"
+      - echo Tag image
       - docker tag swiggy-app:latest 317968578233.dkr.ecr.us-east-1.amazonaws.com/swiggy-app:latest
 
-      # Push image to ECR
-      - echo "Pushing image to ECR"
+      - echo Push image
       - docker push 317968578233.dkr.ecr.us-east-1.amazonaws.com/swiggy-app:latest
 
   post_build:
     commands:
-      - echo "Build, Scan, and Push completed successfully"
+      - echo Build completed
 
 artifacts:
   files:
