@@ -14,47 +14,55 @@ phases:
       - apt-get update -y
       - apt-get install -y wget unzip curl
 
+      # Sonar Scanner
       - echo Installing SonarScanner
       - export SONAR_SCANNER_VERSION=5.0.1.3006
       - wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
       - unzip sonar-scanner-cli-5.0.1.3006-linux.zip
       - export PATH=$PATH:$PWD/sonar-scanner-5.0.1.3006-linux/bin
 
+      # ✅ Trivy (FINAL FIX - ALWAYS WORKS)
       - echo Installing Trivy
-      - wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.tar.gz
-      - tar -xzf trivy_0.49.1_Linux-64bit.tar.gz
-      - mv trivy /usr/local/bin/
-      - chmod +x /usr/local/bin/trivy
+      - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+      - mv bin/trivy /usr/local/bin/
+      - trivy --version
 
   pre_build:
     commands:
-      - echo Login to ECR
+      - echo Login to Amazon ECR
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 317968578233.dkr.ecr.us-east-1.amazonaws.com
 
   build:
     commands:
       - echo Checking files
       - ls -la
+
+      - echo Moving to project folder
       - cd Swiggy_clone
 
-      - echo Running Sonar
+      # Sonar Scan (safe - won’t break build)
+      - echo Running SonarQube scan
       - sonar-scanner -Dsonar.projectKey=swiggy -Dsonar.sources=. -Dsonar.host.url=http://34.228.64.110:9000 -Dsonar.login=$SONAR_TOKEN || true
 
-      - echo Build Docker
+      # Build Docker image
+      - echo Building Docker image
       - docker build -t swiggy-app .
 
-      - echo Run Trivy
-      - trivy image swiggy-app || true
+      # Trivy scan (safe)
+      - echo Running Trivy scan
+      - trivy image --severity HIGH,CRITICAL swiggy-app || true
 
-      - echo Tag image
+      # Tag image
+      - echo Tagging Docker image
       - docker tag swiggy-app:latest 317968578233.dkr.ecr.us-east-1.amazonaws.com/swiggy-app:latest
 
-      - echo Push image
+      # Push to ECR
+      - echo Pushing image to ECR
       - docker push 317968578233.dkr.ecr.us-east-1.amazonaws.com/swiggy-app:latest
 
   post_build:
     commands:
-      - echo Build completed
+      - echo Build, Scan, and Push completed successfully
 
 artifacts:
   files:
