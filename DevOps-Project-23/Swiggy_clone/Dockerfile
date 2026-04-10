@@ -1,4 +1,4 @@
-# Use Node.js 16 from AWS Public ECR (NO rate limit)
+# Use Node.js 16 from AWS Public ECR
 FROM public.ecr.aws/docker/library/node:16
 
 # Set working directory
@@ -16,8 +16,11 @@ COPY . .
 # Build React app
 RUN npm run build
 
+# ✅ Install production server
+RUN npm install -g serve
+
 # Expose port
 EXPOSE 3000
 
-# Start app
-CMD ["npm", "start"]
+# ✅ FIXED: use production server
+CMD ["serve", "-s", "build", "-l", "3000"]
