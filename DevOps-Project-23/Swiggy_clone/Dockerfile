@@ -21,8 +21,8 @@ RUN npm install -g serve
 # copy build files
 COPY --from=builder /app/build ./build
 
-# expose port 3000
-EXPOSE 3000
+# expose port 80
+EXPOSE 80
 
 # run production server
-CMD ["serve", "-s", "build", "-l", "3000"]
+CMD ["serve", "-s", "build", "-l", "80"]
