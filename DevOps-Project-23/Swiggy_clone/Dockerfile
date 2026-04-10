@@ -1,26 +1,28 @@
-# Use Node.js 16 from AWS Public ECR
-FROM public.ecr.aws/docker/library/node:16
+# ---------- BUILD STAGE ----------
+FROM public.ecr.aws/docker/library/node:16 AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
-# Copy app code
 COPY . .
-
-# Build React app
 RUN npm run build
 
-# ✅ Install production server
+
+# ---------- PRODUCTION STAGE ----------
+FROM public.ecr.aws/docker/library/node:16
+
+WORKDIR /app
+
+# install serve package
 RUN npm install -g serve
 
-# Expose port
+# copy build files
+COPY --from=builder /app/build ./build
+
+# expose port 3000
 EXPOSE 3000
 
-# ✅ FIXED: use production server
+# run production server
 CMD ["serve", "-s", "build", "-l", "3000"]
