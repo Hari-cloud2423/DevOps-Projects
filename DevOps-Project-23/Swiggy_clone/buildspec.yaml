@@ -67,3 +67,4 @@ phases:
 artifacts:
   files:
     - DevOps-Project-23/Swiggy_clone/appspec.yaml
+    - DevOps-Project-23/Swiggy_clone/swiggy-task-revision.json
